@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WoW Classic Raid Sorter</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,400&display=swap');
+
+  :root {
+    --bg: #0e0c0a;
+    --bg2: #181510;
+    --bg3: #201c16;
+    --bg4: #2a2520;
+    --border: #3a3028;
+    --border2: #4a4038;
+    --gold: #c8a84b;
+    --gold2: #e2c97a;
+    --gold3: #f5e4b0;
+    --text: #d4c9a8;
+    --text2: #8a7d62;
+    --text3: #5a5040;
+    --red: #c0392b;
+    --green: #27ae60;
+
+    /* Class colors */
+    --warrior: #C79C6E;
+    --paladin: #F48CBA;
+    --hunter: #ABD473;
+    --rogue: #FFF569;
+    --priest: #FFFFFF;
+    --mage: #69CCF0;
+    --warlock: #9482C9;
+    --druid: #FF7D0A;
+    --shaman: #0070DE;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    font-size: 15px;
+    min-height: 100vh;
+  }
+
+  /* ─── Header ─── */
+  .header {
+    background: linear-gradient(180deg, #0a0806 0%, var(--bg2) 100%);
+    border-bottom: 1px solid var(--border2);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .header-title {
+    font-family: 'Cinzel', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold2);
+    letter-spacing: 2px;
+  }
+  .header-sub { font-size: 13px; color: var(--text2); }
+
+  /* ─── Tabs ─── */
+  .tabs {
+    display: flex;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    gap: 2px;
+  }
+  .tab {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: var(--text2);
+    padding: 12px 20px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+  .tab:hover { color: var(--gold); }
+  .tab.active { color: var(--gold2); border-bottom-color: var(--gold); }
+
+  /* ─── Main Layout ─── */
+  .main { padding: 24px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ─── Import Area ─── */
+  .import-zone {
+    border: 2px dashed var(--border2);
+    border-radius: 8px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--bg2);
+    margin-bottom: 24px;
+  }
+  .import-zone:hover, .import-zone.drag { border-color: var(--gold); background: var(--bg3); }
+  .import-zone-title { font-family: 'Cinzel', serif; color: var(--gold); font-size: 14px; margin-bottom: 8px; }
+  .import-zone-sub { color: var(--text2); font-size: 13px; }
+  .import-zone input[type=file] { display: none; }
+
+  /* ─── Buttons ─── */
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 8px 16px;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    background: var(--bg3);
+    color: var(--gold);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--bg4); border-color: var(--gold); }
+  .btn.primary { background: var(--gold); color: #1a1200; border-color: var(--gold2); font-weight: 600; }
+  .btn.primary:hover { background: var(--gold2); }
+  .btn.danger { color: var(--red); border-color: var(--red); }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+
+  /* ─── Class Roster ─── */
+  .roster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .class-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .class-header {
+    padding: 8px 12px;
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .class-header .count {
+    font-family: 'Crimson Pro', serif;
+    font-size: 13px;
+    opacity: 0.7;
+  }
+  .class-body { padding: 6px 8px; }
+  .player-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 13px;
+    margin: 2px;
+    cursor: grab;
+    user-select: none;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    transition: all 0.1s;
+  }
+  .player-chip:hover { border-color: var(--border2); }
+  .player-chip.dragging { opacity: 0.4; }
+  .player-chip .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ─── Group Sorter ─── */
+  .sorter-layout {
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 16px;
+  }
+  .groups-area { }
+  .sidebar { }
+
+  .boss-selector {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .boss-selector label { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text2); letter-spacing: 1px; }
+  .boss-selector input[type=text] {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 6px 10px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 14px;
+    width: 180px;
+  }
+  .boss-selector input:focus { outline: none; border-color: var(--gold); }
+
+  .boss-tabs-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .boss-tab {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    padding: 5px 12px;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    background: var(--bg3);
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .boss-tab:hover { color: var(--gold); border-color: var(--gold); }
+  .boss-tab.active { color: var(--gold2); border-color: var(--gold); background: var(--bg4); }
+  .boss-tab .del-boss {
+    position: absolute;
+    top: -5px; right: -5px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--red);
+    color: white;
+    font-size: 9px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .boss-tab:hover .del-boss { display: flex; }
+
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .group-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    min-height: 160px;
+  }
+  .group-box.drag-over { border-color: var(--gold); background: var(--bg3); }
+  .group-header {
+    padding: 6px 10px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 1px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .group-header .slot-count { color: var(--text2); font-family: 'Crimson Pro', serif; font-size: 12px; }
+  .group-body {
+    padding: 6px;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .slot-player {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 13px;
+    cursor: grab;
+    border: 1px solid transparent;
+    background: var(--bg3);
+    transition: all 0.1s;
+    user-select: none;
+  }
+  .slot-player:hover { border-color: var(--border2); }
+  .slot-player.dragging { opacity: 0.4; }
+  .slot-player .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .slot-player .class-badge {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.3px;
+  }
+  .slot-player .spec-badge {
+    font-size: 10px;
+    color: var(--text3);
+    margin-left: auto;
+    font-style: italic;
+  }
+  .slot-empty {
+    padding: 4px 8px;
+    border: 1px dashed var(--border);
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--text3);
+    text-align: center;
+  }
+
+  /* Sidebar class list */
+  .sidebar-title {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text2);
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-class {
+    margin-bottom: 10px;
+  }
+  .sidebar-class-header {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    padding: 3px 6px;
+    border-radius: 3px;
+  }
+  .sidebar-players {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-left: 4px;
+  }
+  .sidebar-player {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    cursor: grab;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    user-select: none;
+    transition: all 0.1s;
+  }
+  .sidebar-player:hover { border-color: var(--border2); }
+  .sidebar-player.used { opacity: 0.4; text-decoration: line-through; }
+  .sidebar-player.dragging { opacity: 0.3; }
+
+  /* ─── Export ─── */
+  .export-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 16px;
+  }
+  .export-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .export-card-header {
+    padding: 10px 14px;
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    color: var(--gold);
+    letter-spacing: 1px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .export-card textarea {
+    width: 100%;
+    background: var(--bg);
+    border: none;
+    color: var(--text);
+    font-family: monospace;
+    font-size: 11px;
+    padding: 12px;
+    resize: vertical;
+    min-height: 220px;
+    outline: none;
+    line-height: 1.6;
+  }
+  .export-boss-selector {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .export-boss-selector label { font-family: 'Cinzel', serif; font-size: 11px; color: var(--text2); }
+  select {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 6px 10px;
+    font-family: 'Crimson Pro', serif;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  select:focus { outline: none; border-color: var(--gold); }
+
+  /* ─── Toasts ─── */
+  .toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--bg3);
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    padding: 10px 18px;
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    color: var(--gold2);
+    letter-spacing: 0.5px;
+    z-index: 9999;
+    animation: toast-in 0.2s ease;
+    pointer-events: none;
+  }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Class color helpers */
+  .c-warrior { color: var(--warrior); }
+  .c-paladin { color: var(--paladin); }
+  .c-hunter { color: var(--hunter); }
+  .c-rogue { color: var(--rogue); }
+  .c-priest { color: #ccc; }
+  .c-mage { color: var(--mage); }
+  .c-warlock { color: var(--warlock); }
+  .c-druid { color: var(--druid); }
+  .c-shaman { color: var(--shaman); }
+  .c-tank { color: var(--warrior); }
+
+  .bg-warrior { background: var(--warrior); }
+  .bg-paladin { background: var(--paladin); }
+  .bg-hunter { background: var(--hunter); }
+  .bg-rogue { background: var(--rogue); }
+  .bg-priest { background: #aaa; }
+  .bg-mage { background: var(--mage); }
+  .bg-warlock { background: var(--warlock); }
+  .bg-druid { background: var(--druid); }
+  .bg-shaman { background: var(--shaman); }
+  .bg-tank { background: var(--warrior); }
+
+  .sep { width: 1px; height: 20px; background: var(--border); }
+
+  .status-bar {
+    padding: 6px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 16px;
+  }
+  .status-bar span { color: var(--gold); }
+
+  .no-data {
+    text-align: center;
+    color: var(--text2);
+    padding: 48px 24px;
+    font-style: italic;
+    font-size: 15px;
+  }
+
+  /* Confirmation popup */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 24px 28px;
+    min-width: 320px;
+    max-width: 480px;
+  }
+  .modal h3 { font-family: 'Cinzel', serif; color: var(--gold2); font-size: 15px; margin-bottom: 12px; }
+  .modal p { color: var(--text2); font-size: 14px; line-height: 1.6; margin-bottom: 18px; }
+  .modal .btn-row { margin: 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">⚔ RAID GROUP SORTER</div>
+    <div class="header-sub">WoW Classic Era · Naxxramas</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showPage('roster')">ROSTER</button>
+  <button class="tab" onclick="showPage('groups')">GROUP SORTER</button>
+  <button class="tab" onclick="showPage('export')">EXPORT</button>
+  <button class="tab" onclick="showPage('names')">NAME MAPPING</button>
+</div>
+
+<div class="main">
+
+  <!-- ═══ ROSTER PAGE ═══ -->
+  <div class="page active" id="page-roster">
+    <div class="import-zone" id="importZone" onclick="document.getElementById('fileInput').click()">
+      <input type="file" id="fileInput" accept=".json" onchange="handleFile(event)">
+      <div class="import-zone-title">⬆ Import Composition JSON</div>
+      <div class="import-zone-sub">Click or drag & drop your raid-helper.xyz JSON export here</div>
+    </div>
+
+    <div id="rosterContent">
+      <div class="no-data">No roster loaded. Import a JSON file to get started.</div>
+    </div>
+  </div>
+
+  <!-- ═══ GROUP SORTER PAGE ═══ -->
+  <div class="page" id="page-groups">
+    <div id="groupsContent">
+      <div class="no-data">Import a roster first, then create boss setups here.</div>
+    </div>
+  </div>
+
+  <!-- ═══ NAME MAPPING PAGE ═══ -->
+  <div class="page" id="page-names">
+    <div id="namesContent">
+      <div class="no-data">Import a roster first.</div>
+    </div>
+  </div>
+
+  <!-- ═══ EXPORT PAGE ═══ -->
+  <div class="page" id="page-export">
+    <div id="exportContent">
+      <div class="no-data">No boss setups found. Create groups first.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3 id="modalTitle">Confirm</h3>
+    <p id="modalMsg"></p>
+    <div class="btn-row">
+      <button class="btn primary" id="modalOk">OK</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let state = {
+  players: [],   // { name, className, specName, isConfirmed }
+  bosses: [],    // { name, groups: [[p1..p5] x 8] }
+  activeBoss: 0,
+  dragSource: null,
+  dragType: null, // 'sidebar' | 'slot'
+  dragFrom: null, // { bossIdx, group, slot }
+  nameAliases: {}, // discordName -> ingameName
+};
+
+// ─── HELPERS ─────────────────────────────────────────────
+const CLASS_COLORS = {
+  warrior:'#C79C6E', paladin:'#F48CBA', hunter:'#ABD473',
+  rogue:'#FFF569', priest:'#CCCCCC', mage:'#69CCF0',
+  warlock:'#9482C9', druid:'#FF7D0A', shaman:'#0070DE',
+  tank:'#C79C6E',
+};
+
+// ─── NAME ALIASES ─────────────────────────────────────────
+// Returns the in-game name to use for a player in exports.
+// Falls back to the discord/signup name if no alias is set.
+function displayName(player) {
+  return state.nameAliases[player.name] || player.name;
+}
+
+function setAlias(discordName, ingameName) {
+  const trimmed = ingameName.trim();
+  if (!trimmed || trimmed === discordName) {
+    delete state.nameAliases[discordName];
+  } else {
+    state.nameAliases[discordName] = trimmed;
+  }
+}
+
+function renderNames() {
+  const el = document.getElementById('namesContent');
+  if (!state.players.length) {
+    el.innerHTML = '<div class="no-data">Import a roster first.</div>';
+    return;
+  }
+
+  // Group by class for visual organisation
+  const groups = {};
+  state.players.forEach(p => {
+    const g = classGroup(p);
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(p);
+  });
+  const order = ['Warrior Tank','Warrior DPS','Priest','Paladin','Druid','Mage','Hunter','Rogue','Warlock','Shaman'];
+
+  let html = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap">
+      <div style="font-family:'Cinzel',serif;font-size:11px;color:var(--text2);letter-spacing:1px">
+        Map Discord signup names → in-game character names for exports.
+        Leave blank to use the signup name as-is.
+      </div>
+      <button class="btn" onclick="clearAllAliases()">CLEAR ALL</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">`;
+
+  order.forEach(g => {
+    if (!groups[g]) return;
+    const players = groups[g];
+    const cls = g.toLowerCase().replace(' dps','').replace(' tank','');
+    const color = classColor(cls);
+
+    html += `<div class="class-card">
+      <div class="class-header" style="background:${color}22;border-bottom:1px solid ${color}44">
+        <span style="color:${color}">${g.toUpperCase()}</span>
+        <span class="count">${players.length}</span>
+      </div>
+      <div style="padding:8px">
+        <div style="display:grid;grid-template-columns:1fr 16px 1fr;gap:4px 8px;align-items:center;margin-bottom:4px">
+          <span style="font-size:10px;color:var(--text3);font-family:'Cinzel',serif;letter-spacing:0.5px">DISCORD NAME</span>
+          <span></span>
+          <span style="font-size:10px;color:var(--text3);font-family:'Cinzel',serif;letter-spacing:0.5px">IN-GAME NAME</span>
+        </div>`;
+
+    players.forEach(p => {
+      const alias = state.nameAliases[p.name] || '';
+      const hasAlias = !!alias;
+      html += `
+        <div style="display:grid;grid-template-columns:1fr 16px 1fr;gap:3px 8px;align-items:center;margin-bottom:3px">
+          <div style="padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:3px;font-size:13px;color:${hasAlias ? 'var(--text2)' : 'var(--text)'}">
+            ${p.name}
+          </div>
+          <div style="text-align:center;color:var(--text3);font-size:12px">→</div>
+          <input
+            type="text"
+            placeholder="${p.name}"
+            value="${alias}"
+            data-discord="${p.name.replace(/"/g,'&quot;')}"
+            oninput="onAliasInput(this)"
+            onblur="onAliasBlur(this)"
+            style="padding:5px 8px;background:var(--bg2);border:1px solid ${hasAlias ? 'var(--gold)' : 'var(--border2)'};border-radius:3px;font-size:13px;color:var(--text);width:100%;font-family:'Crimson Pro',serif;outline:none"
+            onfocus="this.style.borderColor='var(--gold)'"
+          >
+        </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function onAliasInput(input) {
+  input.style.borderColor = input.value.trim() ? 'var(--gold)' : 'var(--border2)';
+}
+
+function onAliasBlur(input) {
+  const discord = input.dataset.discord;
+  setAlias(discord, input.value);
+  input.style.borderColor = input.value.trim() ? 'var(--gold)' : 'var(--border2)';
+}
+
+function clearAllAliases() {
+  openModal('Clear Aliases', 'Remove all name mappings?', () => {
+    state.nameAliases = {};
+    renderNames();
+    toast('All aliases cleared');
+  });
+}
+
+
+function getClassKey(className) {
+  return className ? className.toLowerCase().replace(/\s+/g,'') : 'warrior';
+}
+
+function classColor(cls) {
+  return CLASS_COLORS[getClassKey(cls)] || '#aaa';
+}
+
+// Normalize class for grouping: split warriors into tank vs dps
+function classGroup(player) {
+  const cls = (player.className || '').toLowerCase();
+  const spec = (player.specName || '').toLowerCase();
+  if (cls === 'warrior' || cls === 'tank') {
+    if (spec === 'protection' || cls === 'tank') return 'Warrior Tank';
+    return 'Warrior DPS';
+  }
+  if (cls === 'tank') return 'Warrior Tank';
+  return player.className || 'Unknown';
+}
+
+function dot(cls) {
+  const c = classColor(cls);
+  return `<span class="dot" style="background:${c}"></span>`;
+}
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  // Match tab by its onclick attribute
+  document.querySelectorAll('.tab').forEach(t => {
+    if (t.getAttribute('onclick') === `showPage('${id}')`) t.classList.add('active');
+  });
+  if (id === 'groups') renderGroups();
+  if (id === 'export') renderExport();
+  if (id === 'names') renderNames();
+}
+
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+
+function openModal(title, msg, onOk) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalMsg').textContent = msg;
+  document.getElementById('modalOk').onclick = () => { onOk(); closeModal(); };
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+// ─── FILE IMPORT ─────────────────────────────────────────
+const zone = document.getElementById('importZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); const f = e.dataTransfer.files[0]; if(f) parseJSON(f); });
+
+function handleFile(ev) {
+  const f = ev.target.files[0];
+  if (f) parseJSON(f);
+  ev.target.value = '';
+}
+
+function parseJSON(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      let slots = [];
+      if (data.slots) slots = data.slots;
+      else if (Array.isArray(data)) slots = data;
+
+      // Filter out placeholder/empty slots (no real name, or spec-as-name artifacts)
+      const SPEC_NAMES = ['Fury','Protection','Marksmanship','Combat','Holy','Holy1','Discipline','Fire','Destruction','Restoration','Affliction','Demonology','Beastmastery','Survival','Balance','Feral','Guardian','Dreamstate','Arms','Elemental','Enhancement','Restoration1','Arcane','Frost','Shadow','Smite','Retribution','Protection1'];
+      state.players = slots.map(s => ({
+        name: s.name,
+        className: s.className,
+        specName: s.specName,
+        isConfirmed: s.isConfirmed === 'confirmed',
+        groupNumber: s.groupNumber,
+        slotNumber: s.slotNumber,
+      })).filter(p => p.name && p.name.length > 1 && !SPEC_NAMES.includes(p.name));
+
+      // Auto-build a "Comp Tool" boss from the JSON's groupNumber/slotNumber assignments
+      buildBossFromJSON(data.title || 'Comp Tool');
+
+      renderRoster();
+      toast(`Loaded ${state.players.length} players`);
+    } catch(err) {
+      alert('Failed to parse JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function buildBossFromJSON(bossName) {
+  // Remove existing boss with same name
+  const existing = state.bosses.findIndex(b => b.name === bossName);
+  if (existing !== -1) state.bosses.splice(existing, 1);
+
+  const boss = { name: bossName, groups: [] };
+  for (let g = 0; g < 8; g++) boss.groups[g] = [null,null,null,null,null];
+
+  state.players.forEach(p => {
+    const g = (p.groupNumber || 1) - 1;
+    const s = (p.slotNumber || 1) - 1;
+    if (g >= 0 && g < 8 && s >= 0 && s < 5) {
+      boss.groups[g][s] = p;
+    }
+  });
+
+  state.bosses.unshift(boss);
+  state.activeBoss = 0;
+}
+
+// ─── RENDER ROSTER ───────────────────────────────────────
+function renderRoster() {
+  const el = document.getElementById('rosterContent');
+  if (!state.players.length) { el.innerHTML = '<div class="no-data">No players found in JSON.</div>'; return; }
+
+  // Group by class
+  const groups = {};
+  state.players.forEach(p => {
+    const g = classGroup(p);
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(p);
+  });
+
+  const order = ['Warrior Tank','Warrior DPS','Priest','Paladin','Druid','Mage','Hunter','Rogue','Warlock','Shaman'];
+  let html = `<div class="status-bar">Roster: <span>${state.players.length} players</span> · <span>${Object.keys(groups).length} classes</span></div>`;
+  html += '<div class="roster-grid">';
+
+  order.forEach(g => {
+    if (!groups[g]) return;
+    const players = groups[g];
+    // Determine color
+    let cls = g.toLowerCase().replace(' dps','').replace(' tank','').replace(' ','-');
+    const color = classColor(cls === 'warrior-dps' ? 'warrior' : cls === 'warrior-tank' ? 'tank' : cls);
+
+    html += `<div class="class-card">
+      <div class="class-header" style="background:${color}22; border-bottom:1px solid ${color}44;">
+        <span style="color:${color}">${g.toUpperCase()}</span>
+        <span class="count">${players.length}</span>
+      </div>
+      <div class="class-body">`;
+    players.forEach(p => {
+      const confirmed = p.isConfirmed ? '✓' : '';
+      html += `<span class="player-chip" style="border-color:${color}33">
+        ${dot(cls === 'warrior-tank' || cls === 'warrior-dps' ? 'warrior' : cls)}
+        <span>${displayName(p)}</span>${state.nameAliases[p.name] ? `<span style="font-size:10px;color:var(--text3);margin-left:3px">(${p.name})</span>` : ""}
+        ${confirmed ? `<span style="color:var(--green);font-size:11px">${confirmed}</span>` : ""}
+      </span>`;
+    });
+    html += `</div></div>`;
+  });
+
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ─── RENDER GROUPS ───────────────────────────────────────
+function renderGroups() {
+  const el = document.getElementById('groupsContent');
+  if (!state.players.length) { el.innerHTML = '<div class="no-data">Import a roster first.</div>'; return; }
+
+  // Init default boss if none
+  if (!state.bosses.length) {
+    addBoss('Default', true);
+  }
+
+  let html = '';
+
+  // Boss tabs
+  html += '<div class="boss-tabs-row" id="bossTabs">';
+  state.bosses.forEach((b, i) => {
+    html += `<div class="boss-tab ${i===state.activeBoss?'active':''}" onclick="switchBoss(${i})">
+      ${b.name}
+      <span class="del-boss" onclick="deleteBoss(event,${i})">✕</span>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Template row
+  html += `<div class="btn-row" style="margin-bottom:6px">
+    <span style="font-family:'Cinzel',serif;font-size:10px;color:var(--text2);letter-spacing:1px;margin-right:4px">TEMPLATES:</span>
+    ${Object.keys(BOSS_TEMPLATES).map(t => `<button class="btn" style="font-size:10px;padding:5px 10px" onclick="loadTemplate('${t}')">${t}</button>`).join('')}
+  </div>`;
+
+  // Add boss row
+  html += `<div class="btn-row">
+    <input type="text" id="newBossName" placeholder="Boss name..." style="background:var(--bg2);border:1px solid var(--border2);border-radius:4px;color:var(--text);padding:6px 10px;font-family:'Crimson Pro',serif;font-size:14px;width:170px;" onkeydown="if(event.key==='Enter')addBossFromInput()">
+    <button class="btn" onclick="addBossFromInput()">+ ADD BOSS</button>
+    <div class="sep"></div>
+    <button class="btn" onclick="autoFillGroups()">AUTO FILL</button>
+    <button class="btn" onclick="clearGroups()">CLEAR ALL</button>
+    <button class="btn" onclick="copyBoss()">COPY CURRENT</button>
+  </div>`;
+
+  // Layout
+  html += '<div class="sorter-layout"><div class="groups-area"><div class="groups-grid" id="groupsGrid"></div></div>';
+  html += '<div class="sidebar"><div class="sidebar-title">UNASSIGNED PLAYERS</div><div id="sidebarPlayers"></div></div></div>';
+
+  el.innerHTML = html;
+  renderGroupsGrid();
+  renderSidebar();
+}
+
+function addBoss(name, silent) {
+  const boss = { name: name || 'New Boss', groups: [] };
+  for (let g = 0; g < 8; g++) {
+    boss.groups[g] = [null,null,null,null,null];
+  }
+  state.bosses.push(boss);
+  state.activeBoss = state.bosses.length - 1;
+  if (!silent) { renderGroups(); }
+}
+
+function addBossFromInput() {
+  const inp = document.getElementById('newBossName');
+  const name = (inp.value || '').trim();
+  if (!name) return;
+  addBoss(name);
+  renderGroups();
+}
+
+function switchBoss(i) {
+  state.activeBoss = i;
+  renderGroups();
+}
+
+function deleteBoss(e, i) {
+  e.stopPropagation();
+  if (state.bosses.length <= 1) { toast('Cannot delete last boss'); return; }
+  openModal('Delete Boss', `Delete "${state.bosses[i].name}"?`, () => {
+    state.bosses.splice(i, 1);
+    if (state.activeBoss >= state.bosses.length) state.activeBoss = state.bosses.length - 1;
+    renderGroups();
+  });
+}
+
+function copyBoss() {
+  const src = state.bosses[state.activeBoss];
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.name = src.name + ' (copy)';
+  state.bosses.push(copy);
+  state.activeBoss = state.bosses.length - 1;
+  renderGroups();
+  toast('Boss copied');
+}
+
+function getAssignedPlayers() {
+  const boss = state.bosses[state.activeBoss];
+  const assigned = new Set();
+  boss.groups.forEach(g => g.forEach(p => { if(p) assigned.add(p); }));
+  return assigned;
+}
+
+function renderGroupsGrid() {
+  const grid = document.getElementById('groupsGrid');
+  if (!grid) return;
+  const boss = state.bosses[state.activeBoss];
+  let html = '';
+  for (let g = 0; g < 8; g++) {
+    html += `<div class="group-box" id="group-${g}" 
+      ondragover="onGroupDragOver(event,${g})" 
+      ondrop="onGroupDrop(event,${g})"
+      ondragleave="onGroupDragLeave(event,${g})">
+      <div class="group-header">
+        <span>GROUP ${g+1}</span>
+        <span class="slot-count">${boss.groups[g].filter(Boolean).length}/5</span>
+      </div>
+      <div class="group-body" id="group-body-${g}">`;
+    for (let s = 0; s < 5; s++) {
+      const p = boss.groups[g][s];
+      if (p) {
+        const color = classColor(p.className);
+        html += `<div class="slot-player" draggable="true" 
+          data-group="${g}" data-slot="${s}"
+          ondragstart="onSlotDragStart(event,${g},${s})"
+          ondragend="onSlotDragEnd(event)">
+          <span class="dot" style="background:${color}"></span>
+          <span>${displayName(p)}</span>
+          <span class="spec-badge">${p.specName||''}</span>
+          <span onclick="removeFromGroup(${g},${s})" style="margin-left:4px;cursor:pointer;color:var(--text3);font-size:11px" title="Remove">✕</span>
+        </div>`;
+      } else {
+        html += `<div class="slot-empty">—</div>`;
+      }
+    }
+    html += `</div></div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function renderSidebar() {
+  const el = document.getElementById('sidebarPlayers');
+  if (!el) return;
+  const assigned = getAssignedPlayers();
+
+  // Group by class
+  const groups = {};
+  state.players.forEach(p => {
+    const g = classGroup(p);
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(p);
+  });
+
+  const order = ['Warrior Tank','Warrior DPS','Priest','Paladin','Druid','Mage','Hunter','Rogue','Warlock','Shaman'];
+  let html = '';
+  order.forEach(g => {
+    if (!groups[g]) return;
+    const players = groups[g];
+    const cls = g.toLowerCase().includes('warrior') ? 'warrior' : g.toLowerCase();
+    const color = classColor(cls);
+    const allUsed = players.every(p => assigned.has(p));
+    html += `<div class="sidebar-class">
+      <div class="sidebar-class-header" style="color:${color};background:${color}15">${g}</div>
+      <div class="sidebar-players">`;
+    players.forEach((p, pi) => {
+      const used = assigned.has(p);
+      html += `<div class="sidebar-player ${used?'used':''}" 
+        draggable="${!used}"
+        data-player-idx="${state.players.indexOf(p)}"
+        ondragstart="onSidebarDragStart(event,${state.players.indexOf(p)})"
+        ondragend="onSidebarDragEnd(event)">
+        <span class="dot" style="background:${color}"></span>
+        <span>${displayName(p)}</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  el.innerHTML = html;
+}
+
+function removeFromGroup(g, s) {
+  state.bosses[state.activeBoss].groups[g][s] = null;
+  renderGroupsGrid();
+  renderSidebar();
+}
+
+function autoFillGroups() {
+  const boss = state.bosses[state.activeBoss];
+  const assigned = getAssignedPlayers();
+  const unassigned = state.players.filter(p => !assigned.has(p));
+  let pi = 0;
+  for (let g = 0; g < 8 && pi < unassigned.length; g++) {
+    for (let s = 0; s < 5 && pi < unassigned.length; s++) {
+      if (!boss.groups[g][s]) {
+        boss.groups[g][s] = unassigned[pi++];
+      }
+    }
+  }
+  renderGroupsGrid();
+  renderSidebar();
+  toast('Auto-filled groups');
+}
+
+function clearGroups() {
+  openModal('Clear Groups', 'Remove all players from groups?', () => {
+    const boss = state.bosses[state.activeBoss];
+    for (let g = 0; g < 8; g++) boss.groups[g] = [null,null,null,null,null];
+    renderGroupsGrid();
+    renderSidebar();
+  });
+}
+
+
+// ─── BOSS TEMPLATES ──────────────────────────────────────
+// Pre-built from raid screenshots — names must match JSON roster
+// ─── BOSS TEMPLATES ──────────────────────────────────────
+// Templates store groups as arrays of player names from the comp tool.
+// On load, each name is looked up in the current state.players roster.
+// The comp tool JSON is the source of truth — just import it and click a template.
+
+const BOSS_TEMPLATES = {
+  "Default": [
+    ["Maintank","Offtank1","Offtank2","Fury1","Paladin1"],
+    ["Fury2","Fury3","Fury4","Paladin2","Priest1"],
+    ["Fury19","Fury20","Fury21","Hunter1","Priest2"],
+    ["Fury15","Fury16","Fury17","Fury18","Priest3"],
+    ["Fury12","Fury13","Fury14","Rogue1","Priest4"],
+    ["Fury8","Fury9","Fury10","Fury11","Priest5"],
+    ["Fury5","Fury6","Fury7","Paladin3","Priest6"],
+    ["Druid1","Mage1","Mage2","Mage3","Warlock1"]
+  ],
+  "Gothik": [
+    ["Offtank2","Fury2","Fury3","Rogue1","Paladin2"],
+    ["Warlock1","Mage1","Mage2","Mage3","Paladin3"],
+    ["Maintank","Offtank1","Fury1","Fury4","Paladin1"],
+    ["Fury16","Fury17","Fury18","Priest6","Priest1"],
+    ["Fury19","Fury20","Fury21","Hunter1","Priest2"],
+    ["Fury12","Fury13","Fury14","Fury15","Priest3"],
+    ["Fury8","Fury9","Fury10","Fury11","Priest4"],
+    ["Fury5","Fury6","Fury7","Druid1","Priest5"]
+  ],
+  "Sapphiron": [
+    ["Maintank","Offtank1","Offtank2","Fury1","Paladin1"],
+    ["Fury3","Fury2","Fury4","Paladin2","Priest1"],
+    ["Fury19","Fury20","Fury21","Hunter1","Priest2"],
+    ["Fury15","Fury16","Fury17","Fury18","Priest3"],
+    ["Fury12","Fury13","Fury14","Rogue1","Priest4"],
+    ["Fury8","Fury9","Fury10","Fury11","Priest5"],
+    ["Mage2","Fury6","Fury7","Mage1","Priest6"],
+    ["Druid1","Paladin3","Fury5","Mage3","Warlock1"]
+  ],
+  "KT Speedrun": [
+    ["Maintank","Offtank1","Offtank2","Paladin1","Warlock1"],
+    ["Fury19","Fury20","Fury21","Hunter1","Priest2"],
+    ["Fury4","Fury21","Fury18","Fury12","Priest1"],
+    ["Fury9","Fury6","Fury15","Mage1","Priest3"],
+    ["Fury8","Fury13","Fury17","Mage2","Priest4"],
+    ["Rogue1","Fury5","Fury11","Mage3","Priest5"],
+    ["Fury10","Fury3","Fury1","Paladin2","Priest6"],
+    ["Fury16","Fury2","Fury14","Paladin3","Druid1"]
+  ],
+  "KT Monday": [
+    ["Offtank1","Rogue1","Fury11","Fury14","Paladin1"],
+    ["Maintank","Fury10","Fury6","Warlock1","Paladin2"],
+    ["Offtank2","Fury16","Fury13","Mage1","Priest1"],
+    ["Fury1","Fury12","Fury5","Mage2","Priest3"],
+    ["Fury19","Fury20","Fury21","Hunter1","Priest2"],
+    ["Fury4","Fury18","Fury7","Mage3","Priest4"],
+    ["Fury9","Fury15","Fury3","Druid1","Priest5"],
+    ["Fury8","Fury17","Fury2","Paladin3","Priest6"]
+  ]
+};
+
+// Build ordered role->player map from current players.
+// Order matches the comp tool: Tank class first, then warriors by group/slot, etc.
+function buildRoleMap() {
+  // Sort players by their comp tool position (groupNumber, slotNumber)
+  const sorted = [...state.players].sort((a, b) =>
+    (a.groupNumber * 10 + a.slotNumber) - (b.groupNumber * 10 + b.slotNumber)
+  );
+
+  const tanks    = sorted.filter(p => (p.className||'').toLowerCase() === 'tank' || ((p.className||'').toLowerCase() === 'warrior' && (p.specName||'').toLowerCase() === 'protection'));
+  const furys    = sorted.filter(p => (p.className||'').toLowerCase() === 'warrior' && (p.specName||'').toLowerCase() !== 'protection');
+  const paladins = sorted.filter(p => (p.className||'').toLowerCase() === 'paladin');
+  const priests  = sorted.filter(p => (p.className||'').toLowerCase() === 'priest');
+  const hunters  = sorted.filter(p => (p.className||'').toLowerCase() === 'hunter');
+  const rogues   = sorted.filter(p => (p.className||'').toLowerCase() === 'rogue');
+  const mages    = sorted.filter(p => (p.className||'').toLowerCase() === 'mage');
+  const druids   = sorted.filter(p => (p.className||'').toLowerCase() === 'druid');
+  const warlocks = sorted.filter(p => (p.className||'').toLowerCase() === 'warlock');
+  const shamans  = sorted.filter(p => (p.className||'').toLowerCase() === 'shaman');
+
+  const map = {};
+  if (tanks[0]) map['Maintank'] = tanks[0];
+  for (let i = 1; i < tanks.length; i++) map[`Offtank${i}`] = tanks[i];
+  furys.forEach((p, i)    => { map[`Fury${i+1}`]    = p; });
+  paladins.forEach((p, i) => { map[`Paladin${i+1}`] = p; });
+  priests.forEach((p, i)  => { map[`Priest${i+1}`]  = p; });
+  hunters.forEach((p, i)  => { map[`Hunter${i+1}`]  = p; });
+  rogues.forEach((p, i)   => { map[`Rogue${i+1}`]   = p; });
+  mages.forEach((p, i)    => { map[`Mage${i+1}`]    = p; });
+  druids.forEach((p, i)   => { map[`Druid${i+1}`]   = p; });
+  warlocks.forEach((p, i) => { map[`Warlock${i+1}`] = p; });
+  shamans.forEach((p, i)  => { map[`Shaman${i+1}`]  = p; });
+  return map;
+}
+
+function loadTemplate(templateName) {
+  if (!state.players.length) { toast('Import a roster JSON first!'); return; }
+  const tpl = BOSS_TEMPLATES[templateName];
+  if (!tpl) return;
+
+  const existing = state.bosses.findIndex(b => b.name === templateName);
+  if (existing !== -1) {
+    openModal('Replace Boss', `"${templateName}" already exists. Replace it?`, () => {
+      _applyTemplate(existing, templateName, tpl);
+    });
+    return;
+  }
+  addBoss(templateName, true);
+  _applyTemplate(state.bosses.length - 1, templateName, tpl);
+}
+
+function _applyTemplate(bossIdx, name, tpl) {
+  state.bosses[bossIdx].name = name;
+  const groups = state.bosses[bossIdx].groups;
+  for (let g = 0; g < 8; g++) groups[g] = [null,null,null,null,null];
+
+  const roleMap = buildRoleMap();
+  const usedPlayers = new Set();
+  const unmatched = [];
+
+  for (let g = 0; g < 8; g++) {
+    for (let s = 0; s < 5; s++) {
+      const token = tpl[g] && tpl[g][s];
+      if (!token) continue;
+      const player = roleMap[token];
+      if (player && !usedPlayers.has(player)) {
+        groups[g][s] = player;
+        usedPlayers.add(player);
+      } else if (!player) {
+        unmatched.push(token);
+      }
+    }
+  }
+
+  state.activeBoss = bossIdx;
+  renderGroups();
+  if (unmatched.length) {
+    toast(`Loaded "${name}" — ${unmatched.length} unmatched: ${unmatched.slice(0,3).join(', ')}${unmatched.length>3?'...':''}`);
+  } else {
+    toast(`Loaded "${name}" — all ${usedPlayers.size} players assigned`);
+  }
+}
+
+// ─── DRAG & DROP ─────────────────────────────────────────
+function onSidebarDragStart(e, playerIdx) {
+  state.dragType = 'sidebar';
+  state.dragSource = playerIdx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.classList.add('dragging');
+}
+function onSidebarDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+}
+
+function onSlotDragStart(e, g, s) {
+  state.dragType = 'slot';
+  state.dragFrom = { g, s };
+  e.dataTransfer.effectAllowed = 'move';
+  e.currentTarget.classList.add('dragging');
+}
+function onSlotDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+}
+
+function onGroupDragOver(e, g) {
+  e.preventDefault();
+  document.getElementById('group-'+g).classList.add('drag-over');
+}
+function onGroupDragLeave(e, g) {
+  document.getElementById('group-'+g).classList.remove('drag-over');
+}
+
+function onGroupDrop(e, g) {
+  e.preventDefault();
+  document.getElementById('group-'+g).classList.remove('drag-over');
+  const boss = state.bosses[state.activeBoss];
+
+  if (state.dragType === 'sidebar') {
+    const player = state.players[state.dragSource];
+    if (!player) return;
+    // Find empty slot
+    const emptySlot = boss.groups[g].findIndex(p => !p);
+    if (emptySlot === -1) { toast('Group is full (5/5)'); return; }
+    boss.groups[g][emptySlot] = player;
+  } else if (state.dragType === 'slot') {
+    const { g: sg, s: ss } = state.dragFrom;
+    const srcPlayer = boss.groups[sg][ss];
+    if (sg === g) return;
+    const emptySlot = boss.groups[g].findIndex(p => !p);
+    if (emptySlot === -1) { toast('Group is full (5/5)'); return; }
+    boss.groups[g][emptySlot] = srcPlayer;
+    boss.groups[sg][ss] = null;
+  }
+
+  renderGroupsGrid();
+  renderSidebar();
+}
+
+// ─── RENDER EXPORT ───────────────────────────────────────
+function renderExport() {
+  const el = document.getElementById('exportContent');
+  if (!state.bosses.length || !state.players.length) {
+    el.innerHTML = '<div class="no-data">No boss setups found. Create groups in the Group Sorter.</div>';
+    return;
+  }
+
+  let html = `<div class="export-boss-selector">
+    <label>BOSS:</label>
+    <select id="exportBossSelect" onchange="refreshExport()">`;
+  state.bosses.forEach((b, i) => {
+    html += `<option value="${i}">${b.name}</option>`;
+  });
+  html += `</select></div>`;
+
+  html += `<div class="export-grid">
+    <div class="export-card">
+      <div class="export-card-header">
+        METHOD RAID TOOLS — Import field
+        <button class="btn primary" onclick="copyExport('mrt')">COPY</button>
+      </div>
+      <div style="padding:8px 12px;font-size:11px;color:var(--text2);border-bottom:1px solid var(--border)">MRT → Raid Groups → Import. Format: G1+G2 side-by-side (tab-separated), then G3+G4, G5+G6, G7+G8.</div>
+      <textarea id="export-mrt" readonly></textarea>
+    </div>
+    <div class="export-card">
+      <div class="export-card-header">
+        WEAKAURA — Roster field
+        <button class="btn primary" onclick="copyExport('wa')">COPY</button>
+      </div>
+      <div style="padding:8px 12px;font-size:11px;color:var(--text2);border-bottom:1px solid var(--border)">Paste into WeakAura config "Roster:" field. 40 space-separated names, _ for empty.</div>
+      <textarea id="export-wa" readonly></textarea>
+    </div>
+  </div>`;
+
+  el.innerHTML = html;
+  refreshExport();
+}
+
+function refreshExport() {
+  const sel = document.getElementById('exportBossSelect');
+  const idx = sel ? parseInt(sel.value) : 0;
+  const boss = state.bosses[idx];
+  if (!boss) return;
+
+  // MRT format: pairs of groups side by side, 5 rows each
+  // G1+G2: each row = "G1slotN<tab>G2slotN"
+  // Then G3+G4, G5+G6, G7+G8 — blank line between pairs
+  let mrtLines = [];
+  for (let pair = 0; pair < 4; pair++) {
+    const gA = boss.groups[pair * 2];
+    const gB = boss.groups[pair * 2 + 1];
+    for (let s = 0; s < 5; s++) {
+      const nameA = gA[s] ? displayName(gA[s]) : '';
+      const nameB = gB[s] ? displayName(gB[s]) : '';
+      mrtLines.push(nameA + (nameB ? '\t' + nameB : ''));
+    }
+    if (pair < 3) mrtLines.push('');
+  }
+  document.getElementById('export-mrt').value = mrtLines.join('\n');
+
+  // WeakAura: space-separated names, group by group, slot by slot (40 slots total)
+  let waNames = [];
+  for (let g = 0; g < 8; g++) {
+    for (let s = 0; s < 5; s++) {
+      const p = boss.groups[g][s];
+      waNames.push(p ? displayName(p) : '_');
+    }
+  }
+  document.getElementById('export-wa').value = waNames.join(' ');
+}
+
+function copyExport(type) {
+  const el = document.getElementById('export-' + type);
+  if (!el) return;
+  navigator.clipboard.writeText(el.value).then(() => toast('Copied to clipboard!'));
+}
+
+// ─── KEYBOARD SHORTCUT ───────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ─── LOAD SAMPLE DATA ────────────────────────────────────
+// Allow paste JSON too
+document.addEventListener('paste', e => {
+  const text = e.clipboardData.getData('text/plain');
+  if (text && text.trim().startsWith('{')) {
+    try {
+      const data = JSON.parse(text);
+      if (data.slots) {
+        const SPEC_NAMES = ['Fury','Protection','Marksmanship','Combat','Holy','Holy1','Discipline','Fire','Destruction','Restoration','Affliction','Demonology','Beastmastery','Survival','Balance','Feral','Guardian','Dreamstate','Arms','Elemental','Enhancement','Restoration1','Arcane','Frost','Shadow','Smite','Retribution','Protection1'];
+        state.players = data.slots.map(s => ({
+          name: s.name, className: s.className, specName: s.specName,
+          isConfirmed: s.isConfirmed === 'confirmed',
+          groupNumber: s.groupNumber, slotNumber: s.slotNumber,
+        })).filter(p => p.name && p.name.length > 1 && !SPEC_NAMES.includes(p.name));
+        buildBossFromJSON(data.title || 'Comp Tool');
+        renderRoster();
+        toast(`Pasted ${state.players.length} players`);
+      }
+    } catch(e) {}
+  }
+});
+</script>
+</body>
+</html>
